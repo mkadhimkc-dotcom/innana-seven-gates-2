@@ -15,9 +15,14 @@ var music_volume: int = 80
 var sfx_volume: int = 100
 
 ## Virtual pad (spec section 11).
-var touch_enabled: bool = true
+##
+## On by default only where there is no keyboard. On a desktop it sat on top
+## of the play area and hid the corners of the room, which is exactly the
+## "excessive permanent UI" section 34 warns against. Players can still turn
+## it on anywhere from the controls menu.
+var touch_enabled: bool = OS.has_feature("mobile")
 var pad_scale: int = 100          ## percent
-var pad_opacity: int = 60         ## percent
+var pad_opacity: int = 55         ## percent
 var pad_left_handed: bool = false
 var pad_margin: int = 12          ## world units from the screen edge
 
