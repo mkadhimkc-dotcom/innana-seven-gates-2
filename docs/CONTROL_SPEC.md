@@ -39,10 +39,20 @@ makes it discoverable without instruction.
 * **Coyote time**: 4 ticks after walking off a ledge. (Recorded but not
   actually honoured until the first play test; a jump pressed just after
   leaving a platform now still jumps.)
-* **Variable jump height**: releasing jump while rising cuts the velocity.
+* **No variable jump height.** Every jump is the same arc. Releasing the
+  button early used to cut the rise, which made distance range from 0.6 to
+  2.2 tiles on hold duration alone — while a one-tile gap needs 2.0. Play
+  testing reported the jump as inconsistent and it was: the most important
+  authored number in the game was a function of how long a human held a key.
 
-These three graces are what make grid-true movement feel forgiving instead of
-stiff. They are all integer-tick and deterministic.
+The first two are what make grid-true movement feel forgiving instead of
+stiff. They are integer-tick and deterministic. The third was removed because
+predictability matters more here than expressiveness: levels are authored
+against a guarantee, and a guarantee that depends on button-hold duration is
+not one.
+
+`tools/jump_profile.gd` prints the arc for every hold duration, which is how
+this was diagnosed and how it stays honest.
 
 ## 4. Touch layout
 
@@ -112,7 +122,7 @@ F11 and F12 exist only in debug builds.
 | Gravity | +3/tick | — |
 | Terminal velocity | 64 | four world units per tick |
 | Jump velocity | −54 | rises ~28.7 world units: clears one tile, never two |
-| Jump reach | ~2.2 tiles | horizontal travel over the 35-tick airborne window |
+| Jump reach | 2.19 tiles | **identical for every jump**, tap or hold |
 | Landing recovery | 3 ticks | enough to read, too short to feel sticky |
 | Push | 20 ticks per tile | deliberately slower than walking; a push is a commitment |
 

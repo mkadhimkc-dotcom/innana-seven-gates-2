@@ -67,7 +67,8 @@ func _check_level(path: String) -> void:
 	check(not TileDB.has(start_tile, TileDB.F_HAZARD), "start tile is not a hazard")
 
 	## Nothing may be placed inside solid rock, or it can never be collected.
-	for row_name: String in ["treasures", "required_objects", "checkpoints", "switches"]:
+	for row_name: String in ["treasures", "required_objects", "checkpoints",
+			"switches", "enemies"]:
 		for e: Dictionary in (lv.get(row_name) as Array):
 			var p: Vector2i = e["pos"]
 			check(lv.in_bounds(p.x, p.y), "%s %s is inside the map"

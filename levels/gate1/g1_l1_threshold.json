@@ -6,9 +6,9 @@
   "difficulty": 1,
   "palette": "gate1",
   "seed": 1985,
-  "qa_status": "IN_DEVELOPMENT",
+  "qa_status": "QA_REQUIRED",
 
-  "notes": "Gate I opener. Teaches, in this order and one at a time: walk, jump a gap, climb a ladder, take treasure, find the key, use the sealed gate. Nothing is combined and nothing is timed. The whole room is visible from the start position, so the player can see the gate they are trying to reach before they know how to open it.",
+  "notes": "Gate I opener. Teaches, in this order and one at a time: walk, jump a gap, climb a ladder, take treasure, find the key, use the sealed gate. Nothing is combined and nothing is timed. The whole room is visible from the start position, so the player can see the gate they are trying to reach before they know how to open it. QA: the terrace runs two tiles past the upper ladder on purpose. It originally ended at the ladder column, so overshooting the ladder by a single tile dropped the player six tiles and cost a third of their health - a punishment for imprecision, on the critical path, in the first level of the game.",
 
   "map": [
     "################",
@@ -16,7 +16,7 @@
     "#.........HBBBB#",
     "#.........H....#",
     "#.........H....#",
-    "#BBBBBHBBBB....#",
+    "#BBBBBHBBBBBB..#",
     "#.....H........#",
     "#.....H........#",
     "#.....H........#",
@@ -47,7 +47,11 @@
       "note": "Authored as tile 08 in the map as well; this row is what the debug overlay and telemetry label." }
   ],
 
-  "enemies": [],
+  "enemies": [
+    { "id": "g_watcher", "type": "guardian", "pos": [11, 4], "dir": -1,
+      "speed": 6, "damage": 1,
+      "note": "The first enemy in the game. A guardian on the terrace, which is twelve tiles long so the player has room to stand and read its pattern before committing. Deliberately slower than default: this is the level that teaches what an enemy IS. It walks between the boundary wall and the terrace ledge, so it is fully contained and can never reach the ground floor or camp the spawn. It stands between the player and the upper ladder, so it has to be dealt with - timed past, or killed with the dagger - but she can always retreat down the first ladder." }
+  ],
 
   "checkpoints": [
     { "id": "cp_ladder_foot", "pos": [6, 10] }
@@ -73,5 +77,5 @@
     "exit_requires": ["k_threshold"]
   },
 
-  "solution": "From the start at (2,10) walk right along the floor, collecting t_tablet_1 at (4,10). The ladder foot at (6,10) is the checkpoint. Continue right; a single tile of reed stakes sits at (8,10). Jump it from (7,10) to (9,10) - the gap is one tile and well inside a standing jump. Take k_threshold at (13,10). Return left to the ladder at column 6 and climb. The ladder passes through the terrace floor at row 5 and stops flush with its surface, so step off to either side at (5,4) or (7,4). t_tablet_2 sits at (2,4) to the left, off the critical path. Walk right along the terrace to column 10 and climb the second ladder, which passes through the gate walk at row 2 and again stops flush. Step right onto the walk, take t_seal_1 at (12,1), and enter the gate at (14,1), which unseals once the key is held."
+  "solution": "A guardian patrols the terrace; it can be jumped over at the apex of a jump, killed with the dagger from an adjacent tile, or simply waited out. From the start at (2,10) walk right along the floor, collecting t_tablet_1 at (4,10). The ladder foot at (6,10) is the checkpoint. Continue right; a single tile of reed stakes sits at (8,10). Jump it from (7,10) to (9,10) - the gap is one tile and well inside a standing jump. Take k_threshold at (13,10). Return left to the ladder at column 6 and climb. The ladder passes through the terrace floor at row 5 and stops flush with its surface, so step off to either side at (5,4) or (7,4). t_tablet_2 sits at (2,4) to the left, off the critical path. Walk right along the terrace to column 10 and climb the second ladder (the terrace continues to column 12, so overshooting the ladder is harmless), which passes through the gate walk at row 2 and again stops flush. Step right onto the walk, take t_seal_1 at (12,1), and enter the gate at (14,1), which unseals once the key is held."
 }
