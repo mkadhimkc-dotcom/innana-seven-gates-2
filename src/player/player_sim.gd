@@ -55,7 +55,14 @@ const STAIR_SPEED: int = 16
 const GRAVITY: int = 3
 const TERMINAL_V: int = 64
 const JUMP_V: int = -54
-const JUMP_CUT_V: int = -16         # variable jump height on early release
+## There is deliberately NO variable jump height. Releasing the button
+## early used to cut the rise, which made distance range from 0.6 to 2.2
+## tiles depending only on how long a human held a key - and a one-tile
+## gap needs 2.0. Play testing called the jump inconsistent, and it was:
+## the single most important authored guarantee in the game was a
+## function of button-hold duration. The arc is now fixed. That also
+## matches the movement rule this project states everywhere else, that
+## movement is deliberate rather than physically simulated.
 const LANDING_TICKS: int = 3
 const PUSH_TICKS: int = 20          # deliberately slower than walking
 const ATTACK_TICKS: int = 12
@@ -77,12 +84,20 @@ const TRANSITIONS: Dictionary = {
 	S.WALKING: [S.IDLE, S.RUNNING, S.JUMPING, S.FALLING, S.CLIMBING, S.DESCENDING,
 		S.STAIR_ASCENDING, S.STAIR_DESCENDING, S.PUSHING, S.ATTACKING,
 		S.INTERACTING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
-	S.RUNNING: [S.IDLE, S.WALKING, S.JUMPING, S.FALLING, S.STAIR_ASCENDING,
-		S.STAIR_DESCENDING, S.ATTACKING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
+	## RUNNING shares _tick_grounded with IDLE and WALKING, so it must allow
+	## everything they do. It previously omitted the ladder, push and
+	## interact states, which meant running at a ladder and pressing UP was
+	## an illegal transition. Found by the adversarial fuzzer, not by hand.
+	S.RUNNING: [S.IDLE, S.WALKING, S.JUMPING, S.FALLING, S.CLIMBING, S.DESCENDING,
+		S.STAIR_ASCENDING, S.STAIR_DESCENDING, S.PUSHING, S.ATTACKING,
+		S.INTERACTING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.JUMPING: [S.FALLING, S.CLIMBING, S.DESCENDING, S.LANDING, S.HURT, S.DYING,
 		S.LEVEL_COMPLETE],
-	S.FALLING: [S.LANDING, S.IDLE, S.CLIMBING, S.DESCENDING, S.STAIR_ASCENDING,
-		S.STAIR_DESCENDING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
+	## FALLING -> JUMPING is coyote time: a jump pressed just after walking
+	## off a ledge.
+	S.FALLING: [S.LANDING, S.IDLE, S.JUMPING, S.CLIMBING, S.DESCENDING,
+		S.STAIR_ASCENDING, S.STAIR_DESCENDING, S.HURT, S.DYING,
+		S.LEVEL_COMPLETE],
 	S.LANDING: [S.IDLE, S.WALKING, S.RUNNING, S.JUMPING, S.FALLING, S.PUSHING,
 		S.ATTACKING, S.INTERACTING, S.STAIR_ASCENDING, S.STAIR_DESCENDING,
 		S.CLIMBING, S.DESCENDING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
@@ -124,6 +139,10 @@ var hooks: PlayerHooks = null
 
 ## Diagnostics only. Never read by gameplay logic.
 var last_transition: String = ""
+## Illegal transitions attempted. The assert below prints but does not halt
+## the run, so this counter is what lets a test fail on a broken table.
+var illegal_transitions: int = 0
+var last_illegal: String = ""
 
 
 func _init(collision_map: CollisionMap = null, player_hooks: PlayerHooks = null) -> void:
@@ -176,6 +195,9 @@ func can_transition(to: int) -> bool:
 func _set_state(to: int) -> void:
 	if to == state:
 		return
+	if not can_transition(to):
+		illegal_transitions += 1
+		last_illegal = "%s->%s" % [STATE_NAMES[state], STATE_NAMES[to]]
 	assert(can_transition(to),
 			"illegal transition %s -> %s" % [STATE_NAMES[state], STATE_NAMES[to]])
 	last_transition = "%s->%s" % [STATE_NAMES[state], STATE_NAMES[to]]
@@ -434,9 +456,6 @@ func _tick_airborne(inp: InputFrame, rising: bool) -> void:
 	if inp.axis_y() != 0 and map.climb_at_anchor(pos.x, pos.y):
 		_enter_ladder(S.CLIMBING if inp.axis_y() < 0 else S.DESCENDING)
 		return
-
-	if rising and not inp.is_held(InputFrame.B_JUMP) and vel_y < JUMP_CUT_V:
-		vel_y = JUMP_CUT_V   # variable jump height
 
 	var ax: int = inp.axis_x()
 	if ax != 0:

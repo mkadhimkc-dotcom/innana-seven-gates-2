@@ -30,7 +30,11 @@ window/size/window_width_override=1024
 window/size/window_height_override=768
 window/stretch/mode="viewport"
 window/stretch/aspect="keep"
-window/handheld/orientation=1
+; 4 = SENSOR_LANDSCAPE. The play area is 16x12 tiles, so this is a landscape
+; game; it was set to 1, which Godot defines as PORTRAIT, and would have
+; locked phones to the one orientation the game does not fit. Sensor rather
+; than fixed landscape so the player can hold the phone either way up.
+window/handheld/orientation=4
 
 [input]
 

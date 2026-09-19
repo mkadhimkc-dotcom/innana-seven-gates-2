@@ -181,23 +181,34 @@ func _test_jump_height() -> void:
 	check_ne(q.pos.y, Grid.tile_origin(3), "cannot reach the two-tile ledge")
 	check_eq(q.pos.y, Grid.tile_origin(5), "falls back to the floor")
 
-	test("variable jump height")
-	var tall: PlayerSim = PlayerSim.new(map_from(FLAT))
-	tall.spawn_at_tile(Vector2i(2, 4))
-	var short: PlayerSim = PlayerSim.new(map_from(FLAT))
-	short.spawn_at_tile(Vector2i(2, 4))
-	var tall_peak: int = tall.pos.y
-	var short_peak: int = short.pos.y
+	test("the jump arc is fixed, not variable")
+	## Play testing reported the jump as inconsistent. It was: releasing early
+	## cut the rise, so distance ranged from 0.6 to 2.2 tiles on hold duration
+	## alone while a one-tile gap needs 2.0. Every jump must now be identical
+	## regardless of how long the button is held.
+	var tapped: PlayerSim = PlayerSim.new(map_from(FLAT))
+	tapped.spawn_at_tile(Vector2i(2, 4))
+	var held: PlayerSim = PlayerSim.new(map_from(FLAT))
+	held.spawn_at_tile(Vector2i(2, 4))
+	var tap_apex: int = tapped.pos.y
+	var held_apex: int = held.pos.y
 	var prev: int = 0
-	for i: int in 30:
-		tall.tick(InputFrame.from_mask(InputFrame.B_JUMP, prev))
-		## The short hop releases after three ticks.
-		var mask: int = InputFrame.B_JUMP if i < 3 else 0
-		short.tick(InputFrame.from_mask(mask, prev))
-		prev = InputFrame.B_JUMP
-		tall_peak = mini(tall_peak, tall.pos.y)
-		short_peak = mini(short_peak, short.pos.y)
-	check(tall_peak < short_peak, "holding jump goes higher than tapping it")
+	for i: int in 60:
+		var tap_mask: int = InputFrame.B_RIGHT | (InputFrame.B_JUMP if i < 1 else 0)
+		var hold_mask: int = InputFrame.B_RIGHT | InputFrame.B_JUMP
+		tapped.tick(InputFrame.from_mask(tap_mask, prev))
+		held.tick(InputFrame.from_mask(hold_mask, prev))
+		prev = InputFrame.B_RIGHT | InputFrame.B_JUMP
+		tap_apex = mini(tap_apex, tapped.pos.y)
+		held_apex = mini(held_apex, held.pos.y)
+	check_eq(tap_apex, held_apex, "a tap reaches the same height as a hold")
+	check_eq(tapped.pos.x, held.pos.x, "and travels the same distance")
+
+	test("every jump clears a one-tile gap")
+	## The authored guarantee, checked at its weakest input: a single-tick tap.
+	check(tapped.pos.x - Grid.tile_center(2) >= Grid.tiles(2),
+			"a one-tick tap still covers two tiles (got %.2f)"
+			% (float(tapped.pos.x - Grid.tile_center(2)) / float(Grid.TILE_SUB)))
 
 
 func _test_ladder() -> void:
