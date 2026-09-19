@@ -20,7 +20,12 @@ var sfx_volume: int = 100
 ## of the play area and hid the corners of the room, which is exactly the
 ## "excessive permanent UI" section 34 warns against. Players can still turn
 ## it on anywhere from the controls menu.
-var touch_enabled: bool = OS.has_feature("mobile")
+##
+## The touchscreen check matters as much as the platform one: `has_feature`
+## is FALSE for a phone running the web export, so testing the platform alone
+## would ship a browser build with no controls at all on mobile.
+var touch_enabled: bool = (OS.has_feature("mobile")
+		or DisplayServer.is_touchscreen_available())
 var pad_scale: int = 100          ## percent
 var pad_opacity: int = 55         ## percent
 var pad_left_handed: bool = false
