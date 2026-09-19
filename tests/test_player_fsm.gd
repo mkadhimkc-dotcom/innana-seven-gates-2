@@ -215,7 +215,10 @@ func _test_ladder() -> void:
 
 	test("stepping off the top of a ladder")
 	hold(p, InputFrame.B_RIGHT, 20)
-	check_eq(p.state, PlayerSim.S.IDLE, "steps off onto the upper floor")
+	check_eq(p.state, PlayerSim.S.WALKING,
+			"walks away along the upper floor rather than falling")
+	hold(p, 0, 2)
+	check_eq(p.state, PlayerSim.S.IDLE, "and stops there")
 	check_eq(p.pos.y, Grid.tile_origin(3), "stands on the upper floor surface")
 	check(p.pos.x > Grid.tile_center(2), "actually moved off the ladder")
 

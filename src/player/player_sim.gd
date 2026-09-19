@@ -466,8 +466,14 @@ func _tick_ladder(inp: InputFrame) -> void:
 		var nx: int = pos.x + ax * WALK_SPEED
 		if not map.body_blocked(nx, pos.y):
 			pos.x = nx
-			if map.on_ground(pos.x, pos.y):
-				pos.x = Grid.snap_to_center(pos.x)
+			## The step-off completes only once her ANCHOR is over the new
+			## tile, and then snaps to that tile. Testing the body edges
+			## instead would finish the step while she is still over the
+			## ladder column, and snapping to the nearest centre would pull
+			## her back onto the ladder, where there is no floor to stand on.
+			var anchor_tx: int = Grid.to_tile(pos.x)
+			if map.is_support(anchor_tx, Grid.to_tile(pos.y)):
+				pos.x = Grid.tile_center(anchor_tx)
 				_set_state(S.IDLE)
 				return
 			if _ladder_row() < 0:
