@@ -1,0 +1,85 @@
+{
+  "id": "g1_l2_reed_gallery",
+  "name": "The Reed Gallery",
+  "gate": 1,
+  "index": 2,
+  "difficulty": 2,
+  "palette": "gate1",
+  "seed": 2044,
+  "qa_status": "QA_REQUIRED",
+
+  "notes": "Gate I beat two: DEVELOPMENT. Level 1 taught each verb in isolation; this one puts a consequence on two of them and introduces exactly two new things - a staircase, and a locked door that is NOT the exit. Everything else is deliberately recycled from level 1 so there is only ever one new idea in front of the player at a time (spec section 15). The stakes and the guardian both return, but now the guardian is above the player and visible from the floor before she commits to the climb. QA: the whole room is one screen and the gallery is fully visible from the start position, so the door can be seen to be shut long before the player learns what opens it.",
+
+  "map": [
+    "################",
+    "#..............#",
+    "#..............#",
+    "#..............#",
+    "#..............#",
+    "#G...G.........#",
+    "#BBBBBBBBBBB/BB#",
+    "#........../...#",
+    "#........./....#",
+    "#......../.....#",
+    "#.....^./......#",
+    "################"
+  ],
+
+  "player_start": [1, 10],
+  "exit": [1, 5],
+
+  "treasures": [
+    { "id": "t_bead_1", "pos": [3, 10], "tier": "common", "value": 10 },
+    { "id": "t_bead_2", "pos": [13, 10], "tier": "common", "value": 10,
+      "note": "Off the critical path: it sits past the foot of the staircase, so taking it costs a walk back." },
+    { "id": "t_seal_2", "pos": [2, 5], "tier": "valuable", "value": 40,
+      "note": "Beyond the door, on the way to the gate. A reward for opening it rather than a detour." }
+  ],
+
+  "required_objects": [
+    { "id": "k_gallery", "kind": "key", "pos": [9, 5],
+      "note": "On the gallery, between where the staircase arrives and the door it opens. The player meets the shut door first only if they walk straight past it, which most will not - and that is fine, because the lesson is what a door IS." }
+  ],
+
+  "doors": [
+    { "id": "d_gallery", "pos": [5, 5], "requires": ["k_gallery"],
+      "note": "The first door in the game that is not the level exit. It is the whole point of the level: a barrier inside the room, opened by something you carry." }
+  ],
+
+  "switches": [],
+
+  "hazards": [
+    { "id": "h_stakes_2", "type": "spikes", "pos": [6, 10] }
+  ],
+
+  "enemies": [
+    { "id": "g_gallery", "type": "guardian", "pos": [7, 5], "dir": -1,
+      "speed": 6, "damage": 1,
+      "note": "Starts walking away from where the staircase arrives, so the player is never dropped straight into it. Contained between the shut door and the east wall while the door is closed. Visible from the ground floor for the whole climb." }
+  ],
+
+  "checkpoints": [
+    { "id": "cp_stair_foot", "pos": [7, 10] }
+  ],
+
+  "critical_path": [
+    { "label": "walk right", "pos": [3, 10] },
+    { "label": "jump the stakes", "pos": [7, 10] },
+    { "label": "climb the staircase", "pos": [12, 6] },
+    { "label": "step onto the gallery", "pos": [13, 5] },
+    { "label": "take the key", "pos": [9, 5] },
+    { "label": "open the door", "pos": [6, 5] },
+    { "label": "enter the gate", "pos": [1, 5] }
+  ],
+
+  "optional_routes": [
+    { "label": "walk past the staircase for t_bead_2, then come back",
+      "treasures": ["t_bead_2"] }
+  ],
+
+  "validation_rules": {
+    "exit_requires": ["k_gallery"]
+  },
+
+  "solution": "From the start at (1,10) walk right along the floor, taking t_bead_1 at (3,10). A single tile of reed stakes sits at (6,10); jump it from (5,10) to (7,10), which is also the checkpoint. t_bead_2 lies further right at (13,10) and costs a walk back. The staircase begins at (8,10) and climbs up-right one tile per tile - (8,10), (9,9), (10,8), (11,7), (12,6) - arriving level with the gallery floor, so simply keep walking right and step off at (13,5). A guardian patrols the gallery; it starts walking away from the arrival and is contained between the shut door and the east wall, so it can be watched from the floor below before committing. Take k_gallery at (9,5), continue left, and the door at (5,5) opens on contact once the key is held. t_seal_2 sits just beyond it at (2,5). The gate at (1,5) unseals with the same key."
+}

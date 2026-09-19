@@ -18,6 +18,8 @@ func run() -> void:
 	for path: String in files:
 		_check_level(path)
 
+	_check_campaign(files)
+
 
 func _find_levels(root: String) -> PackedStringArray:
 	var out: PackedStringArray = PackedStringArray()
@@ -134,3 +136,37 @@ func _check_level(path: String) -> void:
 	if lv.qa_status == LevelData.QA.CERTIFIED:
 		check(rep.solvable, "a CERTIFIED level must validate")
 		check(lv.critical_path.size() > 0, "a CERTIFIED level documents its critical path")
+
+
+## The campaign must actually chain, or a finished level is a dead end. This
+## is not hypothetical: before Campaign existed, completing a level printed a
+## line and the game sat there with the start level hardcoded.
+func _check_campaign(files: PackedStringArray) -> void:
+	Campaign.refresh()
+	var order: PackedStringArray = Campaign.levels()
+
+	test("campaign")
+	check_eq(order.size(), files.size(), "every level file is in the campaign")
+	check(not Campaign.first().is_empty(), "there is a first level")
+
+	## Sorted by the level's own gate and index, and every step leads onward
+	## except the last.
+	var ascending: bool = true
+	var dead_ends: PackedStringArray = PackedStringArray()
+	var prev_key: int = -1
+	for i: int in order.size():
+		var parsed: LevelLoader.ParseResult = LevelLoader.load_file(order[i])
+		if parsed.level == null:
+			continue
+		var key: int = parsed.level.gate * 1000 + parsed.level.index_in_gate
+		if key <= prev_key:
+			ascending = false
+		prev_key = key
+		var nxt: String = Campaign.next_after(order[i])
+		if i < order.size() - 1 and nxt.is_empty():
+			dead_ends.append(order[i].get_file())
+	check(ascending, "ordered by gate then index")
+	check(dead_ends.is_empty(), "no level dead-ends mid-campaign: %s"
+			% ", ".join(dead_ends))
+	check(Campaign.next_after(order[order.size() - 1]).is_empty(),
+			"the last level ends the campaign rather than looping")
