@@ -25,6 +25,7 @@ source of truth.
 | Procedural renderer, HUD, virtual pad | built |
 | Debug overlay + QA menu | built |
 | Headless test suite | built |
+| Screenshot + crop tools for art review | built |
 | Gate I level 1 | playable |
 | Gates I–VII content | not started |
 | Audio | not started |
@@ -78,6 +79,7 @@ src/debug/       debug overlay, QA menu
 src/main/        game loop, HUD, main scene
 levels/gate1/    level files (JSON)
 tests/           headless test suites
+tools/           dev tools: level tracer, screenshot cropper
 docs/            design and technical source of truth
 ```
 

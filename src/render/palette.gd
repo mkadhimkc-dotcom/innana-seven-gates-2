@@ -17,7 +17,20 @@ const GOLD := Color("e0ab48")
 const GOLD_DEEP := Color("a6761f")
 const BRONZE := Color("8c6239")
 const CARNELIAN := Color("a4392c")
+const CARNELIAN_LIT := Color("c4553f")
 const SHELL := Color("e8ddc4")
+
+## Inanna. A warm tan rather than shell white: at this size a bright cream
+## face becomes a featureless blob, and the reliefs this is drawn from show
+## dark hair against olive skin, not porcelain.
+const SKIN := Color("c98f63")
+const SKIN_LIT := Color("e0ab7f")
+const SKIN_DARK := Color("9c6a45")
+## Not pure black. Against the near-black backgrounds of the deeper gates
+## a true-black hair mass makes her whole head silhouette disappear and
+## the crown appear to float. A dark plum keeps the shape readable.
+const HAIR := Color("32202c")
+const HAIR_LIT := Color("50374a")
 
 ## UI.
 const UI_TEXT := Color("e8ddc4")

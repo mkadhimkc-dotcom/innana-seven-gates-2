@@ -47,6 +47,8 @@ Defined in `src/render/palette.gd`. Shared anchors across all gates:
 | BRONZE | `#8c6239` | fittings, guardians |
 | CARNELIAN | `#a4392c` | Inanna's robe, danger accents |
 | SHELL | `#e8ddc4` | inlay white, UI text |
+| SKIN | `#c98f63` | Inanna's face, arms, shins |
+| HAIR | `#32202c` | her hair. Dark plum, **not** black |
 
 Per gate (spec section 26):
 
@@ -73,8 +75,14 @@ An original interpretation, not a recreation of anyone else's protagonist.
 * **Read at a glance**: the horned crown (the mark of a Mesopotamian deity) is
   her strongest silhouette feature — which is exactly why losing it at Gate I
   registers.
-* **Palette**: shell skin, carnelian robe, gold regalia, lapis necklace,
-  bitumen hair.
+* **Palette**: warm tan skin, carnelian robe, gold regalia, lapis necklace,
+  dark plum hair.
+* **Skin only at the face, arms and shins.** Everything else is robe. She is
+  19 pixels tall; a bare torso as well makes her head and body merge into one
+  pale blob.
+* **Her hair is not black.** Against the near-black walls of Kur a true-black
+  hair mass erases her head silhouette and leaves the crown apparently
+  floating. `#32202c`, with a lighter sheen along the top.
 
 ### The seven surrenders
 
@@ -104,8 +112,8 @@ The player should notice without exposition.
 | COLLAPSING_FLOOR | brick plus cracks; visibly trembles once triggered |
 | LADDER | two rails, three rungs, lighter than the wall behind |
 | STAIR_L / STAIR_R | four stepped blocks, each with a lit tread |
-| LOCKED_GATE | trilithon doorway, **barred**. Reads as "not yet" |
-| OPEN_GATE | same doorway, bars gone, slow warm pulse in the opening |
+| LOCKED_GATE | trilithon doorway in **pale alabaster**, **barred** in dark bronze. Reads as "not yet" from across the room |
+| OPEN_GATE | same pale doorway, bars gone, slow warm pulse in the opening |
 | SPIKES | upturned reed stakes set into the floor |
 | WATER | translucent, one moving ripple line |
 | PILLAR | inset column with capital and base |
@@ -134,16 +142,60 @@ The player should notice without exposition.
 All treasure bobs on a slow sine driven by the animation counter, so it
 separates from the background without flashing.
 
-## 8. Current implementation, and what replaces it
+## 8. How the rendering actually works
 
-Everything is drawn procedurally in `src/render/world_renderer.gd`. That is
-deliberate: the project has a complete and coherent visual identity with no
-binary assets, which keeps the engine work unblocked.
+Everything is drawn procedurally in `src/render/world_renderer.gd`, at the
+logical 256×192 resolution, which the project upscales with nearest-neighbour
+filtering. This is pixel art drawn with a pen: whole-pixel coordinates,
+deliberate edges, and nothing sub-pixel for the upscale to smear.
 
-Sprite sheets replace the draw functions **one at a time**. Each sheet must
-match the silhouette, palette and read-at-a-glance behaviour described above.
-Nothing in the simulation changes when they land — the renderer is the only
-layer that knows what anything looks like.
+Three principles carry the look, and they matter more than any single tile.
+
+**Light comes from above.** Every solid surface gets a lit top lip, a dark
+underside, and contact shading down its exposed sides, and every solid tile
+casts a soft shadow onto the open space beneath it. This is the single change
+that turns flat coloured squares into architecture; without it the rooms read
+as a spreadsheet.
+
+**Mud brick is irregular.** Each tile hashes its own coordinates and shifts
+its tone slightly, and takes two flecks of straw and grit. A wall of forty
+tiles must not read as forty identical stamps. The hash is deterministic, so
+nothing shimmers between frames.
+
+**The background is a building, and it whispers.** A ziggurat silhouette,
+buttress-and-recess niching and reed-mat courses sit behind the play space so
+empty tiles read as the inside of a temple rather than as void — but all of it
+is drawn as low-alpha washes, much darker than the solid tiles. The first
+attempt drew the niching at full strength and the room came out looking like a
+cage: the background rhythm was louder than the architecture the player
+actually has to read.
+
+Two consequences worth stating outright:
+
+* **Value contrast carries, hue does not**, at this size. The exit gate is
+  drawn in pale alabaster because in the local brown it vanished into the mud
+  brick around it, even though it was a different colour.
+* **Skin appears only at the face, arms and shins.** Inanna is about 19 pixels
+  tall. An early draft gave her a bare torso as well and her head and body
+  merged into one pale blob with a crown on top.
+
+Sprite sheets can replace these draw functions **one at a time**. Each sheet
+must match the silhouette, palette and read-at-a-glance behaviour described
+above. Nothing in the simulation changes when they land — the renderer is the
+only layer that knows what anything looks like.
+
+### Looking at it
+
+Art cannot be reasoned about, only looked at. Two tools exist for that:
+
+```bash
+godot --path . --resolution 1024x768 -- --shot build/shot.png --shot-after 50
+godot --headless --path . --script res://tools/crop.gd -- build/shot.png build/crop.png 26 142 40 44 7
+```
+
+The first renders the running game to a PNG and quits; the second crops a
+region and magnifies it with nearest-neighbour, so a 16×16 tile or a 19-pixel
+character can be judged at working size.
 
 ## 9. Constraints
 

@@ -50,6 +50,12 @@ func _ready() -> void:
 		qa.action_requested.connect(_on_qa_action)
 		ui.add_child(qa)
 
+		## Optional capture-and-quit, for checking the renderer from a
+		## command line the way the simulation is checked by the tests.
+		var shot: AutoScreenshot = AutoScreenshot.from_cmdline()
+		if shot != null:
+			add_child(shot)
+
 	load_level(START_LEVEL)
 
 

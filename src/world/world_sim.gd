@@ -201,7 +201,7 @@ func _resolve_overlaps() -> void:
 		if body.has(c["pos"]):
 			_take_checkpoint(cid)
 
-	if map.body_on_hazard(player.pos.x, player.pos.y):
+	if map.feet_in_hazard(player.pos.x, player.pos.y):
 		if player.apply_damage(1, 0):
 			_emit("hazard_hit", {})
 
@@ -481,7 +481,10 @@ func _take_checkpoint(cid: String) -> void:
 		return
 	checkpoints_taken[cid] = true
 	checkpoint = snap
-	player.enter_checkpoint()
+	## Claiming a checkpoint does NOT interrupt her. It used to put the
+	## player into a 24-tick CHECKPOINT state that swallowed input, which
+	## read as a stutter in the middle of a walk. It is a world event and
+	## a lit brazier now, nothing more.
 	_emit("checkpoint", {"id": cid})
 
 

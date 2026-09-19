@@ -36,7 +36,9 @@ makes it discoverable without instruction.
 * **`just_pressed` is computed per tick**, by diffing against the previous
   tick's mask — not from Godot's event queue, so it survives replay.
 * **Jump buffer**: 6 ticks. Pressing jump just before landing still jumps.
-* **Coyote time**: 4 ticks after walking off a ledge.
+* **Coyote time**: 4 ticks after walking off a ledge. (Recorded but not
+  actually honoured until the first play test; a jump pressed just after
+  leaving a platform now still jumps.)
 * **Variable jump height**: releasing jump while rising cuts the velocity.
 
 These three graces are what make grid-true movement feel forgiving instead of
@@ -76,9 +78,9 @@ All under `Settings`, persisted to `user://settings.cfg`:
 
 | Setting | Default | Range |
 |---|---|---|
-| `touch_enabled` | true | on/off |
+| `touch_enabled` | on for mobile, off for desktop | on/off |
 | `pad_scale` | 100 | 60–200 % |
-| `pad_opacity` | 60 | 10–100 % |
+| `pad_opacity` | 55 | 10–100 % |
 | `pad_left_handed` | false | on/off |
 | `pad_margin` | 12 | world units from the screen edge |
 
@@ -107,9 +109,10 @@ F11 and F12 exist only in debug builds.
 | Run | 24 | noticeably faster without outrunning readability |
 | Climb | 16 | divides the tile exactly, so climbs land on boundaries |
 | Stairs | 16 per axis | true diagonal at walking pace |
-| Gravity | +4/tick | — |
+| Gravity | +3/tick | — |
 | Terminal velocity | 64 | four world units per tick |
-| Jump velocity | −60 | rises ~26 world units: clears one tile, never two |
+| Jump velocity | −54 | rises ~28.7 world units: clears one tile, never two |
+| Jump reach | ~2.2 tiles | horizontal travel over the 35-tick airborne window |
 | Landing recovery | 3 ticks | enough to read, too short to feel sticky |
 | Push | 20 ticks per tile | deliberately slower than walking; a push is a commitment |
 
@@ -117,6 +120,18 @@ F11 and F12 exist only in debug builds.
 single most important number in the game: every level is authored against it,
 and the solvability validator's jump envelope is derived from it. Changing it
 invalidates every level in the project.
+
+The first tuning (−60 against gravity 4) satisfied the height rule but only
+carried 1.8 tiles sideways, which meant clearing a one-tile gap required
+jumping from the very edge of the departure tile. That is far too exacting for
+a Gate I tutorial, and the first play test found it immediately. The current
+numbers keep the same height ceiling and buy a whole tile of forgiveness on
+the horizontal.
+
+Note also that a jump needs **three clear rows above the floor** to reach full
+height: her body is 14 world units tall, so a ceiling two rows up cuts the
+arc short. Rooms that ask for a full-distance jump must give her the headroom
+to take it.
 
 ## 8. Alignment
 
