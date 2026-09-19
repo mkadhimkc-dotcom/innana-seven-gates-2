@@ -41,6 +41,36 @@ Open the project folder in Godot and press F5, or:
 godot --path .
 ```
 
+## Play it in a browser
+
+Live: **https://mkadhimkc-dotcom.github.io/innana-seven-gates-2/**
+
+That is the `gh-pages` branch, which holds nothing but the exported build.
+To rebuild and republish:
+
+```bash
+godot --headless --path . --export-release "Web" "build/web/index.html"
+```
+
+Then replace the contents of `gh-pages` with `build/web/`, keeping the
+`.nojekyll` file. Test it locally first — `python -m http.server 8080
+--directory build/web` — because an export that fails only shows up in a
+browser.
+
+Three things about the web build that are easy to get wrong:
+
+* **The export is single-threaded** (`variant/thread_support=false`).
+  Multi-threaded Godot web builds need SharedArrayBuffer, which requires
+  cross-origin isolation headers that GitHub Pages cannot send. Single-threaded
+  has been the Godot default since 4.3 for exactly this reason.
+* **Web requires the Compatibility renderer / WebGL 2.0.** This project already
+  uses `gl_compatibility`, so nothing needed changing.
+* **`rendering/textures/vram_compression/import_etc2_astc` must be on**, or the
+  export is refused with a blank error message. It is needed for the iOS and
+  Android targets anyway.
+
+`export_presets.cfg` is committed deliberately so the build is reproducible.
+
 ## Tests
 
 ```bash

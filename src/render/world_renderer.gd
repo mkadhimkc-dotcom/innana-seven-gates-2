@@ -515,11 +515,9 @@ func _draw_treasures() -> void:
 		var bob: float = roundf(sin(float(_anim_tick) * 0.06 + float(p.x)) * 1.5)
 		var ctr: Vector2 = o + Vector2(8.0, 9.0 + bob)
 
-		## A faint halo, so treasure separates from the wall behind it without
+		## A faint glow, so treasure separates from the wall behind it without
 		## flashing - which would be both ugly and an accessibility problem.
-		var halo: Color = c
-		halo.a = 0.16
-		draw_circle(ctr, 7.0, halo)
+		_draw_glow(ctr, 9.0, c, 1.0)
 
 		match tier:
 			"legendary":
@@ -560,11 +558,9 @@ func _draw_objects() -> void:
 		var ctr: Vector2 = o + Vector2(8.0, 9.0 + bob)
 		var c: Color = Palette.GOLD
 
-		## Required objects glow harder than treasure. Missing one is the
-		## difference between finishing the level and not.
-		var halo: Color = c
-		halo.a = 0.14 + 0.06 * sin(float(_anim_tick) * 0.09)
-		draw_circle(ctr, 8.0, halo)
+		## Required objects glow harder than treasure, and breathe. Missing one
+		## is the difference between finishing the level and not.
+		_draw_glow(ctr, 10.0, c, 1.5 + 0.45 * sin(float(_anim_tick) * 0.09))
 
 		match str(o_def.get("kind", "key")):
 			"seal":
@@ -885,6 +881,19 @@ func _draw_player() -> void:
 		draw_rect(Rect2(b + Vector2(x0, -12.0), Vector2(reach, 2.0)), trim, true)
 		draw_rect(Rect2(b + Vector2(x0, -12.0), Vector2(reach, 1.0)),
 				trim.lightened(0.4), true)
+
+
+## A soft glow behind a pickup: three concentric circles fading outward.
+##
+## A single low-alpha circle was tried first and it read as a dirty brown
+## coin sitting behind the item, because a hard-edged disc of muddy colour is
+## an object, not a light. Stacking a falloff and warming the colour is what
+## makes it read as glow.
+func _draw_glow(ctr: Vector2, radius: float, col: Color, strength: float) -> void:
+	var g: Color = col.lightened(0.30)
+	for i: int in 3:
+		g.a = (0.035 + float(i) * 0.030) * strength
+		draw_circle(ctr, radius - float(i) * 2.5, g)
 
 
 ## Contact shadow. Nothing sells "standing on the floor" like this.

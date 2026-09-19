@@ -1,7 +1,9 @@
 # Godot 4
 .godot/
 /android/
-export_presets.cfg
+# export_presets.cfg is deliberately NOT ignored. It is normally excluded
+# because mobile presets can carry signing credentials; the Web preset carries
+# none, and keeping it tracked is what makes the browser build reproducible.
 *.translation
 
 # Build output
