@@ -242,6 +242,21 @@ func _test_checkpoint_validation() -> void:
 	check(w.checkpoints_taken.has("cp"), "checkpoint taken in a solvable state")
 	check(not w.checkpoint.is_empty(), "the snapshot was stored")
 
+	test("claiming a checkpoint does not interrupt the player")
+	## Regression, first play test: taking a checkpoint used to push her into
+	## a 24-tick CHECKPOINT state that swallowed input, which read as a
+	## stutter in the middle of a walk.
+	var moving: WorldSim = WorldSim.new(_level(CORRIDOR_JSON))
+	var before: int = moving.player.state
+	moving._take_checkpoint("cp")
+	check_eq(moving.player.state, before, "her state is untouched")
+	var prev_x: int = moving.player.pos.x
+	var prev_mask: int = 0
+	for _i: int in 10:
+		moving.tick(InputFrame.from_mask(InputFrame.B_RIGHT, prev_mask))
+		prev_mask = InputFrame.B_RIGHT
+	check(moving.player.pos.x > prev_x, "and she keeps walking immediately after")
+
 	test("an impossible checkpoint is rejected")
 	var w2: WorldSim = WorldSim.new(_level(CORRIDOR_JSON))
 	## Wall the corridor off by hand, simulating a state the game should never

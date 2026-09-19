@@ -58,8 +58,16 @@ func is_solid(tx: int, ty: int) -> bool:
 	return has_flag(tx, ty, TileDB.F_SOLID)
 
 
+## Can the player stand on top of this tile?
+##
+## The top tile of a ladder run counts, even though a ladder is not a floor.
+## Without this a ladder passing up through a floor leaves a hole in that
+## floor and anyone walking across it drops down the shaft. Standing on a
+## ladder top and pressing DOWN still enters the ladder, so nothing is lost.
 func is_support(tx: int, ty: int) -> bool:
-	return has_flag(tx, ty, TileDB.F_SUPPORT)
+	if has_flag(tx, ty, TileDB.F_SUPPORT):
+		return true
+	return is_climb(tx, ty) and not is_climb(tx, ty - 1)
 
 
 func is_climb(tx: int, ty: int) -> bool:
@@ -119,17 +127,16 @@ func body_blocked(ax: int, ay: int) -> bool:
 	return false
 
 
-## Does the body box overlap any hazard tile?
-func body_on_hazard(ax: int, ay: int) -> bool:
-	var x0: int = Grid.to_tile(body_left(ax))
-	var x1: int = Grid.to_tile(body_right(ax))
-	var y0: int = Grid.to_tile(body_top(ay))
-	var y1: int = Grid.to_tile(body_bottom(ay))
-	for ty: int in range(y0, y1 + 1):
-		for tx: int in range(x0, x1 + 1):
-			if is_hazard(tx, ty):
-				return true
-	return false
+## Is the player standing in a hazard?
+##
+## Tested against her ANCHOR, not her body box. Spikes are drawn as short
+## stakes in the floor, and a 12-unit-wide body overlaps the neighbouring tile
+## whenever she stands near the edge of her own — so a body test meant merely
+## walking up to a spike tile hurt her, and a jump over it clipped the tile
+## corner on the way past. Feet-based is both fairer and easier to read: if
+## you put a foot on the stakes, you are hurt.
+func feet_in_hazard(ax: int, ay: int) -> bool:
+	return is_hazard(Grid.to_tile(ax), Grid.to_tile(ay - 1))
 
 
 ## All tiles the body box currently overlaps, top-left to bottom-right.

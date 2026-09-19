@@ -87,6 +87,19 @@ are reserved for gate-specific tiles.
 Ids 0–15 are fixed by the spec and **must never be renumbered**, because level
 files store them by value.
 
+### Two rules that came out of play testing
+
+**The top tile of a ladder run supports weight.** A ladder passing up through
+a floor would otherwise leave a hole in that floor, and anyone walking across
+it dropped down the shaft. Standing on a ladder top and pressing DOWN still
+enters the ladder, so nothing is lost. `CollisionMap.is_support` owns this.
+
+**Hazards are judged by the feet, not the body box.** The body is 12 world
+units wide, so it overlaps the neighbouring tile whenever she stands near the
+edge of her own — which meant walking *up to* spikes hurt her, and a jump over
+them clipped the tile corner on the way past. `CollisionMap.feet_in_hazard`
+tests the anchor only: if you put a foot on the stakes, you are hurt.
+
 ### Conditional tiles are materialised
 
 A conditional tile (locked gate, collapsing floor, hidden passage) is not
@@ -97,7 +110,7 @@ and the solver can reason about a static grid.
 
 ## 5. Player FSM
 
-`PlayerSim` holds 18 states and an explicit `TRANSITIONS` table. `_set_state`
+`PlayerSim` holds 17 states and an explicit `TRANSITIONS` table. `_set_state`
 asserts against that table, so an illegal transition fails loudly in a debug
 build. `_force_state` bypasses it and exists only for spawn and snapshot
 restore, which reconstruct the player rather than driving her.
@@ -105,6 +118,11 @@ restore, which reconstruct the player rather than driving her.
 Movement is deliberate rather than simulated: no friction, no acceleration
 curve, no sliding. A direction press moves at a fixed rate and releasing it
 stops on the same tick.
+
+There is deliberately **no CHECKPOINT state**. The spec suggests one, but in
+play it put the player into a 24-tick pose that swallowed input, which read as
+a stutter in the middle of a walk. Claiming a checkpoint is a world event and
+a lit brazier; it never takes control away.
 
 **Alignment rule.** Stopping, entering or leaving a ladder, and finishing a
 push all snap the anchor to the tile centre. Climbing clamps to the top

@@ -28,7 +28,6 @@ enum S {
 	DYING,
 	DEAD,
 	INTERACTING,
-	CHECKPOINT,
 	LEVEL_COMPLETE,
 }
 
@@ -36,7 +35,7 @@ const STATE_NAMES: Array[String] = [
 	"IDLE", "WALKING", "RUNNING", "JUMPING", "FALLING", "LANDING",
 	"CLIMBING", "DESCENDING", "STAIR_ASCENDING", "STAIR_DESCENDING",
 	"PUSHING", "ATTACKING", "HURT", "DYING", "DEAD", "INTERACTING",
-	"CHECKPOINT", "LEVEL_COMPLETE",
+	"LEVEL_COMPLETE",
 ]
 
 # --- tuning (subunits per tick unless noted) ------------------------------
@@ -46,9 +45,16 @@ const RUN_SPEED: int = 24
 ## lands on tile boundaries rather than drifting past them.
 const CLIMB_SPEED: int = 16
 const STAIR_SPEED: int = 16
-const GRAVITY: int = 4
+## Gravity and jump velocity are tuned together against one rule: a jump
+## must clear ONE tile of height or ONE tile of gap, and never two.
+## -54 against 3 rises 28.7 world units (under the 32 that would reach a
+## two-tile ledge) and stays airborne 35 ticks, which carries her 2.2
+## tiles sideways at walking speed. The earlier -60 against 4 only
+## carried 1.8 tiles, so clearing a one-tile gap meant jumping from the
+## very edge of the departure tile - far too exacting for Gate I.
+const GRAVITY: int = 3
 const TERMINAL_V: int = 64
-const JUMP_V: int = -60             # apex ~26 world units: clears one tile, never two
+const JUMP_V: int = -54
 const JUMP_CUT_V: int = -16         # variable jump height on early release
 const LANDING_TICKS: int = 3
 const PUSH_TICKS: int = 20          # deliberately slower than walking
@@ -57,7 +63,6 @@ const INTERACT_TICKS: int = 8
 const HURT_TICKS: int = 20
 const INVULN_TICKS: int = 90
 const DYING_TICKS: int = 48
-const CHECKPOINT_TICKS: int = 24
 const COYOTE_TICKS: int = 4         # grace after walking off a ledge
 const JUMP_BUFFER_TICKS: int = 6    # grace for pressing jump just before landing
 const MAX_HEALTH: int = 3
@@ -68,21 +73,19 @@ const FALL_DAMAGE_SUB: int = Grid.TILE_SUB * 5   # survivable fall height
 const TRANSITIONS: Dictionary = {
 	S.IDLE: [S.WALKING, S.RUNNING, S.JUMPING, S.FALLING, S.CLIMBING, S.DESCENDING,
 		S.STAIR_ASCENDING, S.STAIR_DESCENDING, S.PUSHING, S.ATTACKING,
-		S.INTERACTING, S.HURT, S.DYING, S.CHECKPOINT, S.LEVEL_COMPLETE],
+		S.INTERACTING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.WALKING: [S.IDLE, S.RUNNING, S.JUMPING, S.FALLING, S.CLIMBING, S.DESCENDING,
 		S.STAIR_ASCENDING, S.STAIR_DESCENDING, S.PUSHING, S.ATTACKING,
-		S.INTERACTING, S.HURT, S.DYING, S.CHECKPOINT, S.LEVEL_COMPLETE],
+		S.INTERACTING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.RUNNING: [S.IDLE, S.WALKING, S.JUMPING, S.FALLING, S.STAIR_ASCENDING,
-		S.STAIR_DESCENDING, S.ATTACKING, S.HURT, S.DYING, S.CHECKPOINT,
-		S.LEVEL_COMPLETE],
+		S.STAIR_DESCENDING, S.ATTACKING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.JUMPING: [S.FALLING, S.CLIMBING, S.DESCENDING, S.LANDING, S.HURT, S.DYING,
 		S.LEVEL_COMPLETE],
 	S.FALLING: [S.LANDING, S.IDLE, S.CLIMBING, S.DESCENDING, S.STAIR_ASCENDING,
 		S.STAIR_DESCENDING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.LANDING: [S.IDLE, S.WALKING, S.RUNNING, S.JUMPING, S.FALLING, S.PUSHING,
 		S.ATTACKING, S.INTERACTING, S.STAIR_ASCENDING, S.STAIR_DESCENDING,
-		S.CLIMBING, S.DESCENDING, S.HURT, S.DYING, S.CHECKPOINT,
-		S.LEVEL_COMPLETE],
+		S.CLIMBING, S.DESCENDING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.CLIMBING: [S.IDLE, S.DESCENDING, S.FALLING, S.JUMPING, S.WALKING,
 		S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.DESCENDING: [S.IDLE, S.CLIMBING, S.FALLING, S.JUMPING, S.WALKING,
@@ -93,14 +96,10 @@ const TRANSITIONS: Dictionary = {
 		S.FALLING, S.LANDING, S.JUMPING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.PUSHING: [S.IDLE, S.WALKING, S.FALLING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.ATTACKING: [S.IDLE, S.FALLING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
-	S.INTERACTING: [S.IDLE, S.FALLING, S.HURT, S.DYING, S.CHECKPOINT,
-		S.LEVEL_COMPLETE],
+	S.INTERACTING: [S.IDLE, S.FALLING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.HURT: [S.IDLE, S.LANDING, S.FALLING, S.DYING, S.LEVEL_COMPLETE],
 	S.DYING: [S.DEAD],
 	S.DEAD: [S.IDLE],
-	## Claiming a checkpoint is a brief flourish, not a shield: a hazard or an
-	## enemy can still reach her during it.
-	S.CHECKPOINT: [S.IDLE, S.FALLING, S.HURT, S.DYING, S.LEVEL_COMPLETE],
 	S.LEVEL_COMPLETE: [S.IDLE],
 }
 
@@ -160,7 +159,7 @@ func is_alive() -> bool:
 ## Busy states ignore movement input; the world uses this to suppress the
 ## virtual pad and to know when a scripted state owns the player.
 func is_locked() -> bool:
-	return state in [S.DYING, S.DEAD, S.LEVEL_COMPLETE, S.CHECKPOINT, S.HURT]
+	return state in [S.DYING, S.DEAD, S.LEVEL_COMPLETE, S.HURT]
 
 
 # --- transition plumbing --------------------------------------------------
@@ -226,8 +225,6 @@ func tick(inp: InputFrame) -> void:
 		S.DYING:
 			if state_ticks >= DYING_TICKS:
 				_set_state(S.DEAD)
-		S.CHECKPOINT:
-			_tick_timed_return(CHECKPOINT_TICKS)
 		S.DEAD, S.LEVEL_COMPLETE:
 			pass
 
@@ -425,6 +422,14 @@ func _begin_fall() -> void:
 
 
 func _tick_airborne(inp: InputFrame, rising: bool) -> void:
+	if coyote > 0:
+		coyote -= 1
+	## Coyote time: a jump pressed just after walking off a ledge still
+	## jumps. Without this the grid makes leaving a platform feel like a
+	## trapdoor, because the tile boundary is exact and the player is not.
+	if not rising and coyote > 0 and jump_buffer > 0:
+		_begin_jump()
+		return
 	## Grabbing a ladder mid-air is how most vertical routes are entered.
 	if inp.axis_y() != 0 and map.climb_at_anchor(pos.x, pos.y):
 		_enter_ladder(S.CLIMBING if inp.axis_y() < 0 else S.DESCENDING)
@@ -638,11 +643,6 @@ func kill() -> void:
 	health = 0
 	invuln = 0
 	_set_state(S.DYING)
-
-
-func enter_checkpoint() -> void:
-	if can_transition(S.CHECKPOINT):
-		_set_state(S.CHECKPOINT)
 
 
 func complete_level() -> void:

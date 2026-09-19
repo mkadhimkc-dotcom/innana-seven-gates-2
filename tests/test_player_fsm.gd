@@ -48,6 +48,8 @@ func run() -> void:
 	_test_jump_height()
 	_test_ladder()
 	_test_stairs()
+	_test_ladder_through_a_floor()
+	_test_hazard_hitbox()
 	_test_never_wedged()
 	_test_damage_and_death()
 	_test_snapshot_roundtrip()
@@ -257,6 +259,90 @@ func _test_stairs() -> void:
 	var left_edge: int = p.stair_surface_y(5, 4, Grid.tile_origin(5))
 	var right_edge: int = p.stair_surface_y(5, 4, Grid.tile_origin(5) + Grid.TILE_SUB - 1)
 	check(right_edge < left_edge, "a right-ascending stair rises toward the right")
+
+
+## Regression, first play test: walking across a ladder that passes up
+## through a floor dropped her down the shaft. A ladder in a floor is a
+## ladder, not a hole.
+func _test_ladder_through_a_floor() -> void:
+	var m: CollisionMap = map_from([
+		"########",
+		"#......#",
+		"#BBBHBB#",
+		"#...H..#",
+		"#BBBBBB#",
+		"########",
+	])
+
+	test("the top of a ladder run is standable")
+	check(m.is_support(4, 2), "the ladder tile set into the floor supports her")
+	check(not m.is_support(4, 3), "the rung below it does not")
+
+	test("walking across a ladder opening does not drop her")
+	var p: PlayerSim = PlayerSim.new(m)
+	p.spawn_at_tile(Vector2i(1, 1))
+	var start_y: int = p.pos.y
+	var fell: bool = false
+	var prev: int = 0
+	for _i: int in 80:
+		p.tick(InputFrame.from_mask(InputFrame.B_RIGHT, prev))
+		prev = InputFrame.B_RIGHT
+		if p.pos.y > start_y:
+			fell = true
+	check(not fell, "she stayed on the upper floor the whole way across")
+	check(p.pos.x > Grid.tile_center(4), "and actually crossed the opening")
+
+	test("but pressing down still enters the ladder")
+	var d: PlayerSim = PlayerSim.new(m)
+	d.spawn_at_tile(Vector2i(4, 1))
+	hold(d, InputFrame.B_DOWN, 1)
+	check_eq(d.state, PlayerSim.S.DESCENDING, "down on a ladder top climbs down")
+
+
+## Regression, first play test: hazards tested the whole 12-wide body against
+## the whole 16-wide tile, so merely standing next to spikes hurt her, and a
+## jump over them clipped the tile corner on the way past.
+func _test_hazard_hitbox() -> void:
+	## Three clear rows above the floor. Two is not enough: her body is 14
+	## world units tall, so a ceiling two rows up cuts the jump short and the
+	## test would be measuring the ceiling rather than the jump.
+	var m: CollisionMap = map_from([
+		"########",
+		"#......#",
+		"#......#",
+		"#..^...#",
+		"#BBBBBB#",
+		"########",
+	])
+
+	test("hazard damage is judged by the feet, not the body box")
+	var on_it: int = Grid.tile_center(3)
+	var beside_it: int = Grid.tile_center(2)
+	var feet: int = Grid.tile_origin(4)
+	check(m.feet_in_hazard(on_it, feet), "standing on the stakes is a hit")
+	check(not m.feet_in_hazard(beside_it, feet),
+			"standing in the tile beside them is not")
+
+	test("the very edge of the neighbouring tile is still safe")
+	## Her body overlaps the hazard tile here; her feet do not.
+	var edge: int = Grid.tile_origin(3) - 1
+	check(not m.feet_in_hazard(edge, feet),
+			"a shoulder over the line does not count")
+
+	test("a jump clears a one-tile hazard from the tile before it")
+	var p: PlayerSim = PlayerSim.new(m)
+	p.spawn_at_tile(Vector2i(2, 3))
+	var hits: int = 0
+	var prev: int = 0
+	var mask: int = InputFrame.B_RIGHT | InputFrame.B_JUMP
+	for i: int in 60:
+		var m_now: int = mask if i < 10 else InputFrame.B_RIGHT
+		p.tick(InputFrame.from_mask(m_now, prev))
+		prev = m_now
+		if m.feet_in_hazard(p.pos.x, p.pos.y):
+			hits += 1
+	check_eq(hits, 0, "she never put a foot on the stakes")
+	check(p.pos.x > Grid.tile_origin(4), "and landed past them")
 
 
 ## Spec section 9: the player must never become partially trapped between
