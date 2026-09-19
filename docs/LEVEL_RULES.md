@@ -150,6 +150,27 @@ timing, water currents, or light. Those are playtest concerns, not solvability
 concerns. A level that is solvable but unfairly timed is a QA failure, not a
 validator failure.
 
+## 4b. Stairs and ladders
+
+**Use a ladder for vertical movement. Put stairs only where nothing has to
+walk past them — the edge of a room.**
+
+This is not style, it is geometry. A stair tile's walking surface runs
+diagonally from the top of the tile at one edge to the *bottom* of it at the
+other. Put a stair tile inside a walkway row and its surface drops a full tile
+below that walkway exactly where the two meet: the player falls into the
+notch, and everything on the far side of it is walled off behind a one-tile
+step.
+
+Gate I level 2 was authored that way first and was unplayable because of it.
+
+* **A ladder through a floor** is the safe pattern, and the one level 1 uses:
+  make the ladder's topmost tile *be* the floor tile it passes through. It is
+  then standable, so the walkway stays continuous and the player can walk over
+  it, and pressing DOWN still enters the ladder.
+* **A staircase** needs a clear run of tiles with a floor at each end and
+  nothing expected to walk along the rows it occupies.
+
 ## 5. Authoring a level
 
 1. Sketch the room as ASCII. Keep the whole puzzle on one 16×12 screen until
